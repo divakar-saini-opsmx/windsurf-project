@@ -1,0 +1,14 @@
+# Exclude Python virtual environment
+venv/
+
+# Exclude saved passwords file
+passwords.json
+
+# Exclude test passwords file
+test_passwords.json
+
+# Optional: VSCode settings
+.vscode/
+
+# Optional: __pycache__ folders
+__pycache__/
