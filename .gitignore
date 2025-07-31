@@ -12,3 +12,5 @@ test_passwords.json
 
 # Optional: __pycache__ folders
 __pycache__/
+
+.DS_Store

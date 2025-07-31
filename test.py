@@ -1,34 +1,58 @@
 import unittest
-from password_manager import PasswordManager
 import json
+import base64
+import tempfile
+import os
+from password_manager import PasswordManager
 
 class TestPasswordManager(unittest.TestCase):
     def setUp(self):
-        self.pm = PasswordManager('test_passwords.json')
+        self.filename = tempfile.mkstemp()[1]
+        self.pm = PasswordManager(self.filename)
 
-    def test_add_password(self):
-        self.pm.add_password('example.com', 'user', 'password123')
-        self.assertIn('example.com', self.pm.passwords)
-        self.assertEqual(self.pm.passwords['example.com']['account'], 'user')
-        self.assertEqual(self.pm.passwords['example.com']['password'], 'cGFzc3dvcmQxMjM=')
+    def tearDown(self):
+        os.remove(self.filename)
 
-    def test_retrieve_password(self):
-        self.pm.add_password('example.com', 'user', 'password123')
-        self.assertEqual(self.pm.retrieve_password('example.com'), 'password123')
-        self.assertIsNone(self.pm.retrieve_password('nonexistent.com'))
+    def test_init(self):
+        self.assertEqual(self.pm.filename, self.filename)
+        self.assertEqual(self.pm.passwords, {})
 
     def test_load_passwords(self):
-        self.pm.add_password('example.com', 'user', 'password123')
-        self.pm.save_passwords()
-        new_pm = PasswordManager('test_passwords.json')
-        self.assertIn('example.com', new_pm.passwords)
+        with open(self.filename, 'w') as f:
+            json.dump({'website': {'account': 'account', 'password': 'password'}}, f)
+        self.pm = PasswordManager(self.filename)
+        self.assertEqual(self.pm.passwords, {'website': {'account': 'account', 'password': 'password'}})
+
+    def test_load_passwords_file_not_found(self):
+        self.assertEqual(self.pm.passwords, {})
 
     def test_save_passwords(self):
-        
-        self.pm.add_password('example.com', 'user', 'password123')
+        self.pm.passwords = {'website': {'account': 'account', 'password': 'password'}}
         self.pm.save_passwords()
-        with open('test_passwords.json', 'r') as f:
-            self.assertEqual(json.load(f), self.pm.passwords)
+        with open(self.filename, 'r') as f:
+            self.assertEqual(json.load(f), {'website': {'account': 'account', 'password': 'password'}})
+
+    def test_add_password(self):
+        self.pm.add_password('website', 'account', 'password')
+        self.assertEqual(self.pm.passwords, {'website': {'account': 'account', 'password': base64.b64encode('password'.encode()).decode()}})
+
+    def test_retrieve_password(self):
+        self.pm.add_password('website', 'account', 'password')
+        self.assertEqual(self.pm.retrieve_password('website'), 'password')
+
+    def test_retrieve_password_not_found(self):
+        self.assertIsNone(self.pm.retrieve_password('website'))
+
+    def test_add_multiple_passwords(self):
+        self.pm.add_password('website1', 'account1', 'password1')
+        self.pm.add_password('website2', 'account2', 'password2')
+        self.assertEqual(self.pm.passwords, {'website1': {'account': 'account1', 'password': base64.b64encode('password1'.encode()).decode()}, 'website2': {'account': 'account2', 'password': base64.b64encode('password2'.encode()).decode()}})
+
+    def test_retrieve_multiple_passwords(self):
+        self.pm.add_password('website1', 'account1', 'password1')
+        self.pm.add_password('website2', 'account2', 'password2')
+        self.assertEqual(self.pm.retrieve_password('website1'), 'password1')
+        self.assertEqual(self.pm.retrieve_password('website2'), 'password2')
 
 if __name__ == "__main__":
     unittest.main()

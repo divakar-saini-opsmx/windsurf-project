@@ -1,5 +1,6 @@
 import json
 import base64
+import os
 
 class PasswordManager:
     def __init__(self, filename='passwords.json'):
@@ -7,11 +8,11 @@ class PasswordManager:
         self.passwords = self.load_passwords()
 
     def load_passwords(self):
-        try:
-            with open(self.filename, 'r') as f:
-                return json.load(f)
-        except FileNotFoundError:
+        if not os.path.exists(self.filename) or os.path.getsize(self.filename) == 0:
             return {}
+        with open(self.filename, 'r') as f:
+            return json.load(f)
+
 
     def save_passwords(self):
         with open(self.filename, 'w') as f:
